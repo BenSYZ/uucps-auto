@@ -13,7 +13,8 @@ usage: uucps-auto-recording.py [-h] [-c SSR_CONFIG] [-o SAVE_RECORDING_PATH]
 optional arguments:
   -h, --help            show this help message and exit
   -c SSR_CONFIG, --ssr-config SSR_CONFIG
-                        simplescreenrecorder 配置文件，默认~/.ssr/settings.conf
+                        simplescreenrecorder 配置模板文件，默认~/.ssr/settings.conf
+							真正的配置文件是 ./settings.conf，它是从模板中复制来的，修改了输出文件位置。
   -o SAVE_RECORDING_PATH, --save-recording-path SAVE_RECORDING_PATH
                         若要录屏，录屏文件夹位置
 ```

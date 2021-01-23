@@ -241,7 +241,7 @@ class Uucps(Recorder):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='大学生网络党校课程自动录屏')
-    parser.add_argument('-c', '--ssr-config', help='simplescreenrecorder 配置文件，默认~/.ssr/settings.conf')
+    parser.add_argument('-c', '--ssr-config', help='simplescreenrecorder 配置模板文件，默认~/.ssr/settings.conf')
     parser.add_argument('-o', '--save-recording-path', help='若要录屏，录屏文件夹位置')
     args = parser.parse_args()
 
