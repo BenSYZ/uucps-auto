@@ -14,7 +14,7 @@ class EmptyCredentials(Exception):
     pass
 
 class Recorder():
-    def recorder_control(self,start=''):
+    def recorder_control(self):
         pass
     def recorder_config(self):
         pass
@@ -59,13 +59,13 @@ class Uucps(Recorder):
                     # this course next video
                     self.driver.fullscreen_window()
 
-    def _recorder_control(self,start=''):
+    def _recorder_control(self):
         '''control ssr start/stop'''
-        if start=='start':
+        if self.recorder_command=='start':
             command='simplescreenrecorder --settingsfile=%s/settings.conf < <(echo window-hide;echo record-start) >/dev/null 2>&1 &' % self.dirname
             #print(command)
             os.system(command)
-        elif start == 'stop':
+        elif self.recorder_command == 'stop':
             os.system('killall -TERM simplescreenrecorder')
 
 
@@ -225,11 +225,13 @@ class Uucps(Recorder):
             self.driver.fullscreen_window()
 
             try:
-                self.recorder_control('start')
+                self.recorder_command='start'
+                self.recorder_control()
                 self.driver.find_element_by_tag_name('body').send_keys(Keys.SPACE)
 
                 self.check_box_and_exit()
-                self.recorder_control('stop')
+                self.recorder_command='stop'
+                self.recorder_control()
             except:
                 os.system('killall -TERM simplescreenrecorder')
 
