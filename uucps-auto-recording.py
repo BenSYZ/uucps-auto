@@ -76,9 +76,9 @@ class Uucps(Recorder):
         table_body=course_table[0].find_elements_by_xpath('.//tbody')
         table_data=course_table[0].find_elements_by_xpath('.//tbody/*')
 
-        table_hight=len(table_data)
+        table_height=len(table_data)
 
-        for index in range(1,table_hight):
+        for index in range(1,table_height+1):
             process = table_body[0].find_elements_by_xpath('.//tr['+str(index)+']/td[5]/div/p')
 
             if len(process) != 0:
@@ -195,6 +195,7 @@ class Uucps(Recorder):
             '''Change pages until find not learned course.'''
             #course_list=self.driver.find_elements_by_class_name('progressvalue')
             # get the unlearned courses
+            self.now_to_learn_url=''
             self.the_first_unlearned_button_in_this_page()
 
             while not self.now_to_learn_url: # click next_page until found
@@ -227,7 +228,9 @@ class Uucps(Recorder):
             try:
                 self.recorder_command='start'
                 self.recorder_control()
-                self.driver.find_element_by_tag_name('body').send_keys(Keys.SPACE)
+                replaybutton=self.driver.find_element_by_id('replaybtn')
+                if 'display: block' in replaybutton.get_attribute('style'):
+                    self.driver.find_element_by_tag_name('body').send_keys(Keys.SPACE)
 
                 self.check_box_and_exit()
                 self.recorder_command='stop'
