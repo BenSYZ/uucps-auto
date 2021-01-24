@@ -10,6 +10,7 @@ import time
 import os
 import re
 
+
 class EmptyCredentials(Exception):
     pass
 
@@ -24,6 +25,26 @@ class Uucps(Recorder):
     def __init__(self):
         self.dirname=os.path.dirname(__file__)
         self.pre_url='https://study.enaea.edu.cn'
+        self.ssr_config_template=os.path.abspath(os.path.expanduser('./config/ssr-template.conf'))
+        self.driver_options = webdriver.ChromeOptions()
+        self.virtual_display_width=1024
+        self.virtual_display_height=768
+
+    def virtual_display(self):
+        from pyvirtualdisplay import Display
+        size=(self.virtual_display_width,self.virtual_display_height)
+        self.disp = Display(size=size).start()
+        # display is active
+        print(os.getenv("DISPLAY"))
+        # display is stopped
+        self.driver_options.add_argument('--window-size={width},{height}'.format(width=self.virtual_display_width,height=self.virtual_display_height))
+        self.driver_options.add_argument('--window-position=0,0')
+
+    def virtual_audio(self):
+        time.sleep(1)
+        os.system(self.dirname+'/audio.sh')
+        time.sleep(2)
+        os.system(self.dirname+'/audio.sh')
 
 
     def check_box_and_exit(self):
@@ -62,7 +83,7 @@ class Uucps(Recorder):
     def _recorder_control(self):
         '''control ssr start/stop'''
         if self.recorder_command=='start':
-            command='simplescreenrecorder --settingsfile=%s/settings.conf < <(echo window-hide;echo record-start) >/dev/null 2>&1 &' % self.dirname
+            command='simplescreenrecorder --settingsfile=%s/config/settings.conf < <(echo window-hide;echo record-start) >/dev/null 2>&1 &' % self.dirname
             #print(command)
             os.system(command)
         elif self.recorder_command == 'stop':
@@ -99,7 +120,7 @@ class Uucps(Recorder):
 
     def get_credentials(self):
         '''self.username self.password'''
-        self.credentials=self.dirname+'/login.conf'
+        self.credentials=self.dirname+'/config/login.conf'
 
         with open(self.credentials) as f:
             credentials = f.readlines()
@@ -120,11 +141,13 @@ class Uucps(Recorder):
         self.recording_full_dir_file_name=self.recording_full_dir_name+'/'+self.recording_file_name
         encoded_recording_file=self.recording_full_dir_file_name.encode("unicode_escape").decode("utf-8").replace('\\u','\\x')
 
-        self.ssr_config=self.dirname + '/settings.conf'
+        self.ssr_config=self.dirname + '/config/settings.conf'
         with open(self.ssr_config_template) as fr:
             for line in fr:
                 if line.startswith('file='):
                     line='file='+encoded_recording_file+'\n'
+                if line.startswith('audio_pulseaudio_source='):
+                    line='audio_pulseaudio_source=VTS2.monitor'+'\n'
                 with open(self.ssr_config,'a') as fw:
                     fw.write(line)
 
@@ -151,31 +174,42 @@ class Uucps(Recorder):
                 pass
         time.sleep(2)
 
-    def start_watching(self,ssr_config_template,main_dir_to_save_recordings):
+    def start_watching(self,main_dir_to_save_recordings,virtual_window_size,ssr_config_template):
         if ssr_config_template:
             self.ssr_config_template=os.path.abspath(os.path.expanduser(ssr_config_template))
-        else:
-            self.ssr_config_template=os.path.abspath(os.path.expanduser('~/.ssr/settings.conf'))
 
         try:
+            # do record
             self.recording_predir_name=os.path.abspath(os.path.expanduser(main_dir_to_save_recordings))
             self.recorder_config = self._recorder_config
             self.recorder_control = self._recorder_control
+
+            # if exist virtual_window_size
+            if virtual_window_size:
+                try:
+                    # if format does not have error
+                    self.virtual_display_width,self.virtual_display_height=re.match(r'^(\d*)x(\d*)$',virtual_window_size).group(1,2)
+                except AttributeError:
+                    print('Window size format error, (width)x(height)')
+                    return
+            self.virtual_display()
+
         except TypeError:
             # do not record
+            # 后台运行
+            self.driver_options.add_argument('--headless')
             pass
 
         try:
             self.get_credentials()
         except EmptyCredentials:
-            print("""\n login.conf format:\n\n username=<username>\n password=<password>\n\n Do not add any empty Line.""")
+            print("""\n ./config/login.conf format:\n\n username=<username>\n password=<password>\n\n Do not add any empty Line.""")
             return
 
 
-        options = webdriver.ChromeOptions()
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option('useAutomationExtension', False)
-        self.driver = webdriver.Chrome(options=options)
+        self.driver_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        self.driver_options.add_experimental_option('useAutomationExtension', False)
+        self.driver = webdriver.Chrome(options=self.driver_options)
         self.driver.get(self.pre_url+'/login.do')
 
 
@@ -226,12 +260,13 @@ class Uucps(Recorder):
             self.driver.fullscreen_window()
 
             try:
+                self.virtual_audio()
                 self.recorder_command='start'
                 self.recorder_control()
                 replaybutton=self.driver.find_element_by_id('replaybtn')
                 if 'display: block' in replaybutton.get_attribute('style'):
                     self.driver.find_element_by_tag_name('body').send_keys(Keys.SPACE)
-
+                print(re.sub(r'.mkv','',self.recording_file_name))
                 self.check_box_and_exit()
                 self.recorder_command='stop'
                 self.recorder_control()
@@ -243,12 +278,17 @@ class Uucps(Recorder):
             time.sleep(2)
 
         self.driver.quit()
+        self.disp.stop()
+        print(os.getenv("DISPLAY"))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='大学生网络党校课程自动录屏')
-    parser.add_argument('-c', '--ssr-config', help='simplescreenrecorder 配置模板文件，默认~/.ssr/settings.conf')
-    parser.add_argument('-o', '--save-recording-path', help='若要录屏，录屏文件夹位置')
+    parser.add_argument('-o', '--save-recording-path', help='录屏，录屏文件夹位置,缺省则在不录屏，后台运行，静音')
+    parser.add_argument('-v', '--virtual-display-window-size', help='若要录屏，虚拟桌面尺寸<WIDTH>x<HEIGHT>，默认1024x768')
+
+    parser.add_argument('-c', '--ssr-config', help='simplescreenrecorder 配置模板文件，缺省默认./config/ssr-template.conf')
     args = parser.parse_args()
 
     uucps=Uucps()
-    uucps.start_watching(args.ssr_config,args.save_recording_path)
+    uucps.start_watching(args.save_recording_path, args.virtual_display_window_size, args.ssr_config)
+

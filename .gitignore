@@ -1,1 +1,3 @@
-/settings.conf
+/config/*
+!/config
+!/config/ssr-template.conf
