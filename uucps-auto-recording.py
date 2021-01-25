@@ -266,6 +266,8 @@ class Uucps(Recorder):
                 replaybutton=self.driver.find_element_by_id('replaybtn')
                 if 'display: block' in replaybutton.get_attribute('style'):
                     self.driver.find_element_by_tag_name('body').send_keys(Keys.SPACE)
+                with open('./uucps_course.log','a') as f:
+                    f.write(re.sub(r'.mkv','',self.recording_file_name)+'\t'+os.popen('date').read()+'\n')
                 print(re.sub(r'.mkv','',self.recording_file_name))
                 self.check_box_and_exit()
                 self.recorder_command='stop'

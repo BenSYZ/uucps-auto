@@ -1,9 +1,11 @@
 #!/bin/bash
 
-module_info=$(pactl list modules|grep VTS)
-
+module_info=$(pactl list modules|grep VTS2)
 if [ -z "$module_info" ];then
 	pactl load-module module-virtual-sink sink_name=VTS2
+fi
+module_info=$(pactl list modules|grep VTS1_mute)
+if [ -z "$module_info" ];then
 	pactl load-module module-virtual-sink sink_name=VTS1_mute
 fi
 
