@@ -4,10 +4,6 @@
 ## Requirement
 * python packages
 	+ `selenium`
-	+ `argparse`
-	+ `time`
-	+ `os`
-	+ `re`
 	+ `pyvirtualdisplay`(optional 录屏虚拟桌面)
 
 * `pactl` in `libpulse` 设置虚拟声卡

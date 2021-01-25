@@ -9,9 +9,10 @@ import argparse
 import time
 import os
 import re
+import shutil
 
 
-class EmptyCredentials(Exception):
+class CredentialsError(Exception):
     pass
 
 class Recorder():
@@ -29,6 +30,10 @@ class Uucps(Recorder):
         self.driver_options = webdriver.ChromeOptions()
         self.virtual_display_width=1024
         self.virtual_display_height=768
+        self.credentials=self.dirname+'/config/login.conf'
+        if not os.path.exists(self.credentials):
+            shutil.copyfile(self.dirname+'/config/login-template.conf', self.credentials)
+            raise CredentialsError
 
     def virtual_display(self):
         from pyvirtualdisplay import Display
@@ -120,12 +125,11 @@ class Uucps(Recorder):
 
     def get_credentials(self):
         '''self.username self.password'''
-        self.credentials=self.dirname+'/config/login.conf'
 
         with open(self.credentials) as f:
             credentials = f.readlines()
         if len(credentials) != 2:
-            raise EmptyCredentials
+            raise CredentialsError
 
         username=credentials[0].strip()
         password=credentials[1].strip()

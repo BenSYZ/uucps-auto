@@ -1,4 +1,4 @@
 /config/*
 !/config
-!/config/ssr-template.conf
+!/config/*-template.conf
 /*.log
