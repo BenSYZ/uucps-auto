@@ -178,7 +178,7 @@ class Uucps(Recorder):
                 pass
         time.sleep(2)
 
-    def start_watching(self,main_dir_to_save_recordings,virtual_window_size,ssr_config_template):
+    def start_watching(self,main_dir_to_save_recordings,virtual_window_size,ssr_config_template,test):
         if ssr_config_template:
             self.ssr_config_template=os.path.abspath(os.path.expanduser(ssr_config_template))
 
@@ -201,12 +201,13 @@ class Uucps(Recorder):
         except TypeError:
             # do not record
             # 后台运行
-            self.driver_options.add_argument('--headless')
+            if not test:
+                self.driver_options.add_argument('--headless')
             pass
 
         try:
             self.get_credentials()
-        except EmptyCredentials:
+        except CredentialsError:
             print("""\n ./config/login.conf format:\n\n username=<username>\n password=<password>\n\n Do not add any empty Line.""")
             return
 
@@ -291,10 +292,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='大学生网络党校课程自动录屏')
     parser.add_argument('-o', '--save-recording-path', help='录屏，录屏文件夹位置,缺省则在不录屏，后台运行，静音')
     parser.add_argument('-v', '--virtual-display-window-size', help='若要录屏，虚拟桌面尺寸<WIDTH>x<HEIGHT>，默认1024x768')
+    parser.add_argument('-t', '--test',action='store_true', help='直接显示，默认false')
 
     parser.add_argument('-c', '--ssr-config', help='simplescreenrecorder 配置模板文件，缺省默认./config/ssr-template.conf')
     args = parser.parse_args()
 
     uucps=Uucps()
-    uucps.start_watching(args.save_recording_path, args.virtual_display_window_size, args.ssr_config)
+    uucps.start_watching(args.save_recording_path, args.virtual_display_window_size, args.ssr_config,args.test)
 
